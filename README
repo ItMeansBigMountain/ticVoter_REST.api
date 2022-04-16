@@ -1,0 +1,77 @@
+API KEYS ARE STRIPPED AND SETTINGS.PY NEEDS SECRETS
+
+
+
+
+
+
+DEPLOYMENT NOTES
+SSH INTO EC2 INSTANCE
+
+    SEND FOLDER TO AWS
+        git clone -b <branchname> <remote-repo-url>
+
+    sudo apt-get update
+
+    sudo apt-get install python3-pip apache2 libapache2-mod-wsgi-py3
+
+    sudo pip3 install virtualenv
+
+    Create virtual enviroment
+
+
+    "nano settings.py"
+        import os
+        STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+        ALLOWED_HOSTS=['EC2_DNS_NAME']
+        DEBUG = False
+
+
+
+    pip install -r requirements.txt
+
+    python3 manage.py makemigrations
+    python3 manage.py migrate
+    python3 manage.py collectstatic
+    python3 manage.py runserver 0.0.0.0:8000    # running on open ipv4 dns
+
+
+    # PM2
+    pm2 start manage.py  --name manage.py --interpreter python3 -- runserver 0.0.0.0:8000
+
+
+
+
+
+
+
+
+# CHANGE APACHE CONFIG FILE 
+    nano vi /etc/apache2/sites-available/000-default.conf
+    <VirtualHost *:80>
+    ServerAdmin webmaster@example.com
+    DocumentRoot /home/ubuntu/django/ticRate_API
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    Alias /static /home/ubuntu/django/ticRate_API/static
+    <Directory /home/ubuntu/django/ticRate_API/static>
+    Require all granted
+    </Directory>
+    <Directory /home/ubuntu/django/ticRate_API/ticRate_API>
+    <Files wsgi.py>
+    Require all granted
+    </Files>
+    </Directory>
+    WSGIDaemonProcess ticRate_API python-path=/home/ubuntu/django/ticRate_API python-home=/home/ubuntu/django/ticRate_APIenv
+    WSGIProcessGroup ticRate_API
+    WSGIScriptAlias / /home/ubuntu/django/ticRate_API/ticRate_API/wsgi.py
+    </VirtualHost>
+
+
+
+
+
+    chmod 664 db.sqlite3
+    sudo chown :www-data db.sqlite3
+    sudo chown :www-data /home/ubuntu/ticRate_API
+    sudo service apache2 restart
